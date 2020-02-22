@@ -1,9 +1,9 @@
 const store = {
   items: [
-    { id: cuid(), name: 'apples', checked: false },
-    { id: cuid(), name: 'oranges', checked: false },
-    { id: cuid(), name: 'milk', checked: true },
-    { id: cuid(), name: 'bread', checked: false }
+    { id: cuid(), name: 'apples', checked: false, edit: false },
+    { id: cuid(), name: 'oranges', checked: false, edit: false },
+    { id: cuid(), name: 'milk', checked: true, edit: false },
+    { id: cuid(), name: 'bread', checked: false, edit: false }
   ],
   hideCheckedItems: false
 };
@@ -12,9 +12,19 @@ const generateItemElement = function (item) {
   let itemTitle = `<span class='shopping-item shopping-item__checked'>${item.name}</span>`;
   if (!item.checked) {
     itemTitle = `
-     <span class='shopping-item'>${item.name}</span>
+    <span class='shopping-item'>${item.name}</span>
     `;
   }
+
+  // Updating the DOM when edit is clicked
+
+  let itemEdit = `<span class='shopping-item'>
+  <input type="text" name="shopping-list-edit" class="js-shopping-list-edit" value="${item.name}">`;
+
+  if(item.edit) {
+    itemTitle = itemEdit;
+  }
+
 
   return `
     <li class='js-item-element' data-item-id='${item.id}'>
@@ -26,12 +36,17 @@ const generateItemElement = function (item) {
         <button class='shopping-item-delete js-item-delete'>
           <span class='button-label'>delete</span>
         </button>
+
+        <button class='shopping-item-edit  js-item-edit'>
+          <span class='button-label'>edit</span>
+        </button>
       </div>
     </li>`;
 };
 
 const generateShoppingItemsString = function (shoppingList) {
   const items = shoppingList.map((item) => generateItemElement(item));
+  
   return items.join('');
 };
 
@@ -127,6 +142,26 @@ const handleDeleteItemClicked = function () {
   });
 };
 
+// Generate an input in place of the ${itemTitle} within the rendered html(maybe with a submit next to it?)
+const toggleEditProperty = function (id) {
+  // find index of item.id in items array
+  const editableItem = store.items.find(item => item.id === id);
+  editableItem.edit = !editableItem.edit;
+};
+
+const handleEditItemClicked = function () {
+  $('.js-shopping-list').on('click', '.js-item-edit', event => {
+    // Get the index of the item in store.items.
+    const id = getItemIdFromElement(event.currentTarget);
+    console.log(id);
+    
+    toggleEditProperty(id);
+    render();
+    // Grab the value from the input and assign it as that item's name in the store
+
+  });
+};
+
 /**
  * Toggles the store.hideCheckedItems property
  */
@@ -145,21 +180,34 @@ const handleToggleFilterClick = function () {
   });
 };
 
-/**
- * This function will be our callback when the
- * page loads. It is responsible for initially 
- * rendering the shopping list, then calling 
- * our individual functions that handle new 
- * item submission and user clicks on the 
- * "check" and "delete" buttons for individual 
- * shopping list items.
- */
+const updateItemAfterEdit = function (id, newName) {
+  const foundItem = store.items.find(item => item.id === id);
+  foundItem.name = newName;
+};
+
+const handleEditItemSubmit = function () {
+  $('.js-shopping-list').on('keypress', '.js-shopping-list-edit', event => {
+    if(event.which === 13) {
+      event.preventDefault();
+      const id = getItemIdFromElement(event.currentTarget);
+      const newItemName = $('.js-shopping-list-edit').val();
+      updateItemAfterEdit(id, newItemName);
+      
+      toggleEditProperty(id);
+      render();
+      
+    }
+  });
+};
+
 const handleShoppingList = function () {
   render();
   handleNewItemSubmit();
   handleItemCheckClicked();
   handleDeleteItemClicked();
   handleToggleFilterClick();
+  handleEditItemClicked();
+  handleEditItemSubmit();
 };
 
 // when the page loads, call `handleShoppingList`
